@@ -14,9 +14,10 @@ const TickerContainer = styled.div`
   flex-flow: column;
 `
 
+// grid-template-areas: "ship character corporation alliance";
 const EntryContainer = styled(animated.div)`
   display: grid;
-  grid-template-areas: "ship character corporation alliance";
+  grid-template-areas: "ship character alliance";
   grid-auto-columns: ${({ theme }) => theme.unit}px;
   grid-auto-rows: ${({ theme }) => theme.unit}px;
   gap: ${({ theme }) => theme.gapSize}px;
@@ -117,6 +118,14 @@ const KillmailEntry: React.FC<{
   }, [focus, id, set])
   const onMouseLeave = useCallback(() => unfocus(id), [unfocus, id])
 
+    // {extended && corporationId && <Image
+    //   src={`https://images.evetech.net/corporations/${corporationId}/logo`}
+    //   area='corporation'
+    //   height={height}
+    //   href={`https://zkillboard.com/corporation/${corporationId}/`}
+    //   size={unit}
+    // />}
+
   return <EntryContainer style={{ opacity, paddingBottom, gridAutoRows: height }} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
     <Image
       src={`https://images.evetech.net/types/${shipTypeId}/render`}
@@ -130,13 +139,6 @@ const KillmailEntry: React.FC<{
       area='character'
       height={height}
       href={`https://zkillboard.com/character/${characterId}/`}
-      size={unit}
-    />}
-    {extended && corporationId && <Image
-      src={`https://images.evetech.net/corporations/${corporationId}/logo`}
-      area='corporation'
-      height={height}
-      href={`https://zkillboard.com/corporation/${corporationId}/`}
       size={unit}
     />}
     {extended && allianceId && <Image
