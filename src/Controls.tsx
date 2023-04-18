@@ -5,10 +5,12 @@ import { FontAwesomeIcon, FontAwesomeIconProps } from '@fortawesome/react-fontaw
 import { CameraMode } from './hooks/configuration'
 import { rootId } from './utils/constants'
 
+
+// grid-template-areas: "fullscreen connection camera sidebar";
 const Container = styled.div`
   color: ${({ theme }) => theme.text};
   display: grid;
-  grid-template-areas: "fullscreen connection camera sidebar";
+  grid-template-areas: "connection";
   grid-auto-columns: ${({ theme }) => theme.unit}px;
   grid-auto-rows: ${({ theme }) => theme.unit}px;
   gap: ${({ theme }) => theme.gapSize}px;
@@ -56,9 +58,13 @@ const FullscreenToggle: React.FC = () => {
 const ConnectionStatus: React.FC = () => {
   const connected = useConnection(useCallback(state => state.connected, []))
 
-  return <FlatButton type='button' title={connected ? 'Connected to live feed' : 'Disconnected from live feed!'} area='connection'>
-    <OnOffIcon icon='wifi' enabled={connected} />
-  </FlatButton>
+  if (connected) {
+    return <FlatButton type='button' title={connected ? 'Connected to live feed' : 'Disconnected from live feed!'} area='connection'></FlatButton>
+  } else {
+    return <FlatButton type='button' title={connected ? 'Connected to live feed' : 'Disconnected from live feed!'} area='connection'>
+      <OnOffIcon icon='wifi' enabled={connected} />
+    </FlatButton>
+  }
 }
 
 const cameraIcon: Record<CameraMode, FontAwesomeIconProps['icon']> = {
@@ -101,10 +107,7 @@ const ExtendedTicker: React.FC = () => {
 
 const Controls: React.FC = () => {
   return <Container>
-    <FullscreenToggle />
     <ConnectionStatus />
-    <CameraStatus />
-    <ExtendedTicker />
   </Container>
 }
 
