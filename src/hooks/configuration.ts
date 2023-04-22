@@ -13,7 +13,7 @@ type State = {
 }
 
 export const useConfiguration = create<State>(set => ({
-  cameraMode: CameraMode.follow,
+  cameraMode: CameraMode.full,
   extendedTicker: true,
   setCameraMode: (mode) => set({ cameraMode: mode }),
   toggleExtendedTicker: () => set(state => ({ extendedTicker: !state.extendedTicker }))

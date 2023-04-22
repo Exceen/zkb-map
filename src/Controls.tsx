@@ -10,7 +10,7 @@ import { rootId } from './utils/constants'
 const Container = styled.div`
   color: ${({ theme }) => theme.text};
   display: grid;
-  grid-template-areas: "connection";
+  grid-template-areas: "connection camera";
   grid-auto-columns: ${({ theme }) => theme.unit}px;
   grid-auto-rows: ${({ theme }) => theme.unit}px;
   gap: ${({ theme }) => theme.gapSize}px;
@@ -91,8 +91,17 @@ const CameraStatus: React.FC = () => {
     update(nextCameraMode)
   }
 
+  let cameraFollow = new URL(window.location.href).searchParams.get('cameraFollow') === 'true';
+  if (cameraFollow) {
+    let query = cameraTitles[CameraMode.full]
+    let element = document.querySelector('[title="' + query + '"]');
+    if (element instanceof HTMLElement) {
+      element.click();
+    }
+  }
+
   return <FlatButton type='button' title={cameraTitles[mode]} onClick={onClick} area='camera'>
-    <FontAwesomeIcon icon={cameraIcon[mode]} />
+    {/*<FontAwesomeIcon icon={cameraIcon[mode]} />*/}
   </FlatButton>
 }
 
@@ -107,6 +116,7 @@ const ExtendedTicker: React.FC = () => {
 
 const Controls: React.FC = () => {
   return <Container>
+    <CameraStatus />
     <ConnectionStatus />
   </Container>
 }
