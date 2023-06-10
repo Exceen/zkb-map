@@ -10,7 +10,7 @@ import { rootId } from './utils/constants'
 const Container = styled.div`
   color: ${({ theme }) => theme.text};
   display: grid;
-  grid-template-areas: "connection camera";
+  grid-template-areas: "connection camera sidebar fullscreen";
   grid-auto-columns: ${({ theme }) => theme.unit}px;
   grid-auto-rows: ${({ theme }) => theme.unit}px;
   gap: ${({ theme }) => theme.gapSize}px;
@@ -51,7 +51,7 @@ const FullscreenToggle: React.FC = () => {
   }
 
   return <FlatButton type='button' title={fullScreen ? 'Exit fullscreen' : 'Go fullscreen'} onClick={onClick} area='fullscreen'>
-    <FontAwesomeIcon icon={fullScreen ? 'compress-arrows-alt' : 'expand-arrows-alt'} />
+    {/*<FontAwesomeIcon icon={fullScreen ? 'compress-arrows-alt' : 'expand-arrows-alt'} />*/}
   </FlatButton>
 }
 
@@ -92,6 +92,9 @@ const CameraStatus: React.FC = () => {
   }
 
   let cameraFollow = new URL(window.location.href).searchParams.get('cameraFollow') === 'true';
+  if (!cameraFollow) {
+    cameraFollow = new URL(window.location.href).searchParams.get('follow') === 'true';
+  }
   if (cameraFollow) {
     let query = cameraTitles[CameraMode.full]
     let element = document.querySelector('[title="' + query + '"]');
@@ -110,12 +113,14 @@ const ExtendedTicker: React.FC = () => {
   const toggle = useConfiguration(useCallback(state => state.toggleExtendedTicker, []))
 
   return <FlatButton type='button' title={enabled ? 'Sidebar: full information' : 'Sidebar: only the ship'} onClick={toggle} area='sidebar'>
-    <OnOffIcon icon='list' enabled={enabled} />
+    {/*<OnOffIcon icon='list' enabled={enabled} />*/}
   </FlatButton>
 }
 
 const Controls: React.FC = () => {
   return <Container>
+    <FullscreenToggle />
+    <ExtendedTicker />
     <CameraStatus />
     <ConnectionStatus />
   </Container>
