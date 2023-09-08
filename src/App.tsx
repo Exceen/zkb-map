@@ -78,18 +78,29 @@ const App: React.FC<AppProps> = ({ websocketUrl, universeUrl }) => {
     killmailsRef.current = killmails
   }, [killmails])
 
-  return <ThemeProvider theme={theme}>
-    <Visuals solarSystems={solarSystems} killmails={killmailsRef} theme={theme} />
+  let disableTicker = new URL(window.location.href).searchParams.get('disableTicker') === 'true';
+  if (disableTicker) {
+    return <ThemeProvider theme={theme}>
+      <Visuals solarSystems={solarSystems} killmails={killmailsRef} theme={theme} />
+      <TopRight>
+        <Controls />
+        {devMode && <DevTools />}
+      </TopRight>
+    </ThemeProvider>
+  } else {
+    return <ThemeProvider theme={theme}>
+      <Visuals solarSystems={solarSystems} killmails={killmailsRef} theme={theme}/>
 
-    <TopLeft>
-      <KillmailTicker killmails={killmails} />
-    </TopLeft>
+      <TopLeft>
+        <KillmailTicker killmails={killmails}/>
+      </TopLeft>
 
-    <TopRight>
-      <Controls />
-      {devMode && <DevTools />}
-    </TopRight>
-  </ThemeProvider>
+      <TopRight>
+        <Controls/>
+        {devMode && <DevTools/>}
+      </TopRight>
+    </ThemeProvider>
+  }
 }
 
 export default App;
