@@ -25,3 +25,5 @@ yarn-error.log*
 
 /sde
 bundle-analysis.html
+
+.idea/
