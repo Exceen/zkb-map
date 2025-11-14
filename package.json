@@ -33,7 +33,7 @@
   },
   "scripts": {
     "start": "craco start",
-    "build": "craco build",
+    "build": "NODE_OPTIONS=--openssl-legacy-provider craco build",
     "test": "craco test",
     "sde2json": "node ./sde2json.js",
     "predeploy": "PUBLIC_URL=https://tmikoss.github.io/zkb-map yarn run build",
