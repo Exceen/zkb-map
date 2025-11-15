@@ -95,6 +95,7 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
   const receivePing = useConnection(useCallback(state => state.receivePing, []))
   const trimKillmails = useKillmails(useCallback(state => state.trimKillmails, []))
   const receiveKillmail = useKillmails(useCallback(state => state.receiveKillmail, []))
+  const killmails = useKillmails(useCallback(state => state.killmails, []))
 
   useEffect(() => {
     const interval = setInterval(trimKillmails, trimIntervalMs)
@@ -126,15 +127,31 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
         const data = await response.json()
 
         // RedisQ returns {package: {...}} or {package: null}
+        if (data.package && !data.package.killmail) {
+            console.log("No killmail in package:", data.package)
+        }
         if (data.package && data.package.killmail) {
           const { killmail, zkb } = data.package
+          const killmailId = killmail.killmail_id
+
+          // Skip if we already have this killmail (prevents duplicates)
+          if (killmails[killmailId]) {
+            // Continue polling immediately
+            pollTimeout = setTimeout(pollForKillmails, 100)
+            return
+          }
+
           const killmailData: WebsocketKillmail = {
-            killmail_id: killmail.killmail_id,
+            killmail_id: killmailId,
             killmail_time: killmail.killmail_time,
             solar_system_id: killmail.solar_system_id,
             victim: killmail.victim,
             zkb: zkb
           }
+
+          console.log('data.package.killmail:', data.package.killmail)
+          console.log('killmailData:', killmailData)
+
           receiveKillmail(parseKillmail(killmailData))
         }
 
@@ -159,5 +176,5 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
         clearTimeout(pollTimeout)
       }
     }
-  }, [sourceUrl, receiveKillmail, receivePing])
+  }, [sourceUrl, receiveKillmail, receivePing, killmails])
 }
