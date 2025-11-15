@@ -10,6 +10,7 @@ export const normalKillmailAgeMs = 45 * 1000
 const trimIntervalMs = 5 * 1000
 const reconnectIntervalMs = trimIntervalMs
 const maxKillmailAgeMs = 5 * 60 * 1000 // Only accept killmails from the last 5 minutes
+const pollingInterval = 1000 // Poll every second
 
 type WebsocketKillmail = {
   killmail_id: number
@@ -142,7 +143,7 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
           // Skip if we already have this killmail (prevents duplicates)
           if (killmails[killmailId]) {
             // Continue polling immediately
-            pollTimeout = setTimeout(pollForKillmails, 100)
+            pollTimeout = setTimeout(pollForKillmails, pollingInterval)
             return
           }
 
@@ -152,7 +153,7 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
           if (killmailAge > maxKillmailAgeMs) {
             console.log(`Skipping old killmail (${Math.round(killmailAge / 1000 / 60)} minutes old)`)
             // Continue polling immediately to clear out old killmails from queue
-            pollTimeout = setTimeout(pollForKillmails, 100)
+            pollTimeout = setTimeout(pollForKillmails, pollingInterval)
             return
           }
 
@@ -173,7 +174,7 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
         receivePing()
 
         // Continue polling immediately
-        pollTimeout = setTimeout(pollForKillmails, 100)
+        pollTimeout = setTimeout(pollForKillmails, pollingInterval)
       } catch (error) {
         console.error('Error polling RedisQ:', error)
         // Retry after interval on error
