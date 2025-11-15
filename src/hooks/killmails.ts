@@ -1,23 +1,14 @@
 import differenceInMilliseconds from 'date-fns/differenceInMilliseconds'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect } from 'react'
 import pickBy from 'lodash/pickBy'
 import create from 'zustand'
 import parseISO from 'date-fns/parseISO'
 import { scaleValue } from '../utils/scaling'
 import { useConnection } from './connection'
-import uniqueId from 'lodash/uniqueId'
 
 export const normalKillmailAgeMs = 45 * 1000
 const trimIntervalMs = 5 * 1000
-const normalCloseCode = 1000
 const reconnectIntervalMs = trimIntervalMs
-
-type WebsocketStatusMessage = {
-  action: 'tqStatus'
-  tqStatus: string
-  tqCount: string
-  kills: string
-}
 
 type WebsocketKillmail = {
   killmail_id: number
@@ -45,8 +36,6 @@ type WebsocketKillmail = {
   }
 }
 
-type WebsocketMessage = WebsocketKillmail | WebsocketStatusMessage
-
 type State = {
   killmails: Record<string, Killmail>,
   focused?: Killmail,
@@ -61,11 +50,6 @@ const shouldKeep = (now: Date, killmail: Killmail) => {
   const age = differenceInMilliseconds(now, receivedAt)
   return age < normalKillmailAgeMs * scaledValue
 }
-
-const subscribeMessage = (channel: string) => JSON.stringify({
-  "action": "sub",
-  "channel": channel
-})
 
 const parseKillmail = (raw: WebsocketKillmail): Killmail => {
   const { killmail_id, killmail_time, victim, solar_system_id, zkb } = raw
@@ -111,7 +95,6 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
   const receivePing = useConnection(useCallback(state => state.receivePing, []))
   const trimKillmails = useKillmails(useCallback(state => state.trimKillmails, []))
   const receiveKillmail = useKillmails(useCallback(state => state.receiveKillmail, []))
-  const [connectionRequest, setConnectionRequest] = useState(uniqueId(sourceUrl))
 
   useEffect(() => {
     const interval = setInterval(trimKillmails, trimIntervalMs)
@@ -119,34 +102,62 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
   }, [trimKillmails])
 
   useEffect(() => {
-    const connection = new WebSocket(sourceUrl)
+    let isActive = true
+    let pollTimeout: ReturnType<typeof setTimeout>
 
-    connection.onopen = () => {
-      connection.send(subscribeMessage('killstream'))
-      connection.send(subscribeMessage('public'))
-    }
+    const pollForKillmails = async () => {
+      if (!isActive) return
 
-    connection.onmessage = (e) => {
-      const parsed: WebsocketMessage = JSON.parse(e.data)
+      try {
+        const response = await fetch(sourceUrl, {
+          redirect: 'follow' // Handle redirects to /object.php
+        })
 
-      if ('killmail_id' in parsed) {
-        receiveKillmail(parseKillmail(parsed))
-      } else if ('tqStatus' in parsed) {
+        if (!response.ok) {
+          if (response.status === 429) {
+            console.warn('Rate limited (429), backing off...')
+            // Back off on rate limit
+            pollTimeout = setTimeout(pollForKillmails, reconnectIntervalMs * 2)
+            return
+          }
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        // RedisQ returns {package: {...}} or {package: null}
+        if (data.package && data.package.killmail) {
+          const { killmail, zkb } = data.package
+          const killmailData: WebsocketKillmail = {
+            killmail_id: killmail.killmail_id,
+            killmail_time: killmail.killmail_time,
+            solar_system_id: killmail.solar_system_id,
+            victim: killmail.victim,
+            zkb: zkb
+          }
+          receiveKillmail(parseKillmail(killmailData))
+        }
+
+        // Send periodic ping to keep connection status updated
         receivePing()
-      } else {
-        console.error(parsed)
+
+        // Continue polling immediately
+        pollTimeout = setTimeout(pollForKillmails, 100)
+      } catch (error) {
+        console.error('Error polling RedisQ:', error)
+        // Retry after interval on error
+        pollTimeout = setTimeout(pollForKillmails, reconnectIntervalMs)
       }
     }
 
-    connection.onclose = ({ code }) => {
-      if (code !== normalCloseCode) {
-        // unless the connection was closed by hook exiting, trigger reconnect by resetting effect param
-        setTimeout(() => {
-          setConnectionRequest(uniqueId(sourceUrl))
-        }, reconnectIntervalMs)
+    // Start polling
+    pollForKillmails()
+
+    return () => {
+      isActive = false
+      if (pollTimeout) {
+        clearTimeout(pollTimeout)
       }
     }
-
-    return () => connection.close(normalCloseCode)
-  }, [sourceUrl, receiveKillmail, receivePing, connectionRequest])
+  }, [sourceUrl, receiveKillmail, receivePing])
 }
