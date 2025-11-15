@@ -1,4 +1,5 @@
-FROM node:16
+FROM node:24
+# FROM node:24-alpine
 
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
@@ -16,8 +17,12 @@ COPY package*.json ./
 RUN npm install -g npm@9.6.4
 RUN npm install --legacy-peer-deps
 RUN npm install -g serve
+# RUN npm install -g yarn
 
 COPY . .
+
+RUN yarn build
+RUN yarn global add serve
 
 EXPOSE 3131
 CMD ["serve", "-s", "build", "-l", "3131"]
