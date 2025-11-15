@@ -10,7 +10,7 @@ export const normalKillmailAgeMs = 45 * 1000
 const trimIntervalMs = 5 * 1000
 const reconnectIntervalMs = trimIntervalMs
 const maxKillmailAgeMs = 5 * 60 * 1000 // Only accept killmails from the last 5 minutes
-const pollingInterval = 1000 // Poll every second
+const pollingInterval = 5 * 1000
 
 type WebsocketKillmail = {
   killmail_id: number
@@ -111,6 +111,8 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
     const pollForKillmails = async () => {
       if (!isActive) return
 
+      console.log('polling RedisQ for killmails...')
+
       try {
         const response = await fetch(sourceUrl, {
           redirect: 'follow' // Handle redirects to /object.php
@@ -146,6 +148,22 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
             pollTimeout = setTimeout(pollForKillmails, pollingInterval)
             return
           }
+
+
+          let attackerCharacterIds = [];
+          for (let attacker of (killmail.attackers ?? [])) {
+            if (attacker['character_id']) {
+              attackerCharacterIds.push(attacker['character_id']);
+            }
+          }
+          let isNpcOnlyKillmail = attackerCharacterIds.length === 0;
+          if (isNpcOnlyKillmail) {
+            console.log(`Skipping NPC-only killmail ${killmailId}`);
+            // Continue polling immediately
+            pollTimeout = setTimeout(pollForKillmails, pollingInterval)
+            return
+          }
+
 
           // Check if killmail is too old (filter out old queued killmails)
           const killmailTime = parseISO(killmail.killmail_time)
