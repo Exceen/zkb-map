@@ -9,6 +9,7 @@ import { useConnection } from './connection'
 export const normalKillmailAgeMs = 45 * 1000
 const trimIntervalMs = 5 * 1000
 const reconnectIntervalMs = trimIntervalMs
+const maxKillmailAgeMs = 5 * 60 * 1000 // Only accept killmails from the last 5 minutes
 
 type WebsocketKillmail = {
   killmail_id: number
@@ -141,6 +142,16 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
           // Skip if we already have this killmail (prevents duplicates)
           if (killmails[killmailId]) {
             // Continue polling immediately
+            pollTimeout = setTimeout(pollForKillmails, 100)
+            return
+          }
+
+          // Check if killmail is too old (filter out old queued killmails)
+          const killmailTime = parseISO(killmail.killmail_time)
+          const killmailAge = differenceInMilliseconds(new Date(), killmailTime)
+          if (killmailAge > maxKillmailAgeMs) {
+            console.log(`Skipping old killmail (${Math.round(killmailAge / 1000 / 60)} minutes old)`)
+            // Continue polling immediately to clear out old killmails from queue
             pollTimeout = setTimeout(pollForKillmails, 100)
             return
           }
