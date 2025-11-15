@@ -126,6 +126,10 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
 
         const data = await response.json()
 
+        if (data.package) {
+          console.log('data.package:', data.package)
+        }
+
         // RedisQ returns {package: {...}} or {package: null}
         if (data.package && !data.package.killmail) {
             console.log("No killmail in package:", data.package)
@@ -149,7 +153,6 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
             zkb: zkb
           }
 
-          console.log('data.package.killmail:', data.package.killmail)
           console.log('killmailData:', killmailData)
 
           receiveKillmail(parseKillmail(killmailData))

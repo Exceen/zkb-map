@@ -131,7 +131,7 @@ const KillmailEntry: React.FC<{
       src={`https://images.evetech.net/types/${shipTypeId}/render`}
       area='ship'
       height={height}
-      href={url}
+      href={`https://zkillboard.com/kill/${id}/`}
       size={unit}
     />
     {extended && characterId && <Image
