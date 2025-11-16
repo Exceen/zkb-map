@@ -10,7 +10,9 @@ export const normalKillmailAgeMs = 45 * 1000
 const trimIntervalMs = 5 * 1000
 const reconnectIntervalMs = trimIntervalMs
 const maxKillmailAgeMs = 5 * 60 * 1000 // Only accept killmails from the last 5 minutes
-const pollingInterval = 5 * 1000
+const pollingInterval = 0.1 * 1000
+
+const uniqueQueueId = `zkb-map-${Math.random().toString(36).substring(2, 9)}`
 
 type WebsocketKillmail = {
   killmail_id: number
@@ -111,10 +113,12 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
     const pollForKillmails = async () => {
       if (!isActive) return
 
-      console.log('polling RedisQ for killmails...')
+      const separator = sourceUrl.includes('?') ? '&' : '?'
+      const urlWithQueue = `${sourceUrl}${separator}queueID=${uniqueQueueId}`
+      console.log('polling RedisQ for killmails...', urlWithQueue)
 
       try {
-        const response = await fetch(sourceUrl, {
+        const response = await fetch(urlWithQueue, {
           redirect: 'follow' // Handle redirects to /object.php
         })
 
