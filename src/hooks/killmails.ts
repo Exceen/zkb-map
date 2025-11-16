@@ -133,9 +133,9 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
 
         const data = await response.json()
 
-        if (data.package) {
-          console.log('data.package:', data.package)
-        }
+        // if (data.package) {
+        //   console.log('data.package:', data.package)
+        // }
 
         if (data.package && data.package.killmail) {
           const { killmail, zkb } = data.package
