@@ -10,7 +10,7 @@ export const normalKillmailAgeMs = 45 * 1000
 const trimIntervalMs = 5 * 1000
 const reconnectIntervalMs = trimIntervalMs
 const maxKillmailAgeMs = 5 * 60 * 1000 // Only accept killmails from the last 5 minutes
-const pollingInterval = 0.1 * 1000
+const pollingInterval = 2 * 1000
 
 const uniqueQueueId = `zkb-map-${Math.random().toString(36).substring(2, 9)}`
 
@@ -140,53 +140,44 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
 
         // RedisQ returns {package: {...}} or {package: null}
         if (data.package && !data.package.killmail) {
-            console.log("No killmail in package:", data.package)
+            console.warn("No killmail in package")
         }
         if (data.package && data.package.killmail) {
           const { killmail, zkb } = data.package
           const killmailId = killmail.killmail_id
 
-          // Skip if we already have this killmail (prevents duplicates)
-          if (killmails[killmailId]) {
-            pollTimeout = setTimeout(pollForKillmails, pollingInterval)
-            return
-          }
-
-
+          // check killmail data
           let attackerCharacterIds = [];
           for (let attacker of (killmail.attackers ?? [])) {
             if (attacker['character_id']) {
               attackerCharacterIds.push(attacker['character_id']);
             }
           }
-          let isNpcOnlyKillmail = attackerCharacterIds.length === 0;
-          if (isNpcOnlyKillmail) {
-            console.log(`Skipping NPC-only killmail ${killmailId}`);
-            pollTimeout = setTimeout(pollForKillmails, pollingInterval)
-            return
+          const isNpcOnlyKillmail = attackerCharacterIds.length === 0;
+          const killmailAge = differenceInMilliseconds(new Date(), parseISO(killmail.killmail_time))
+          const killmailIsTooOld = killmailAge > maxKillmailAgeMs
+          const killmailIsDuplicate = !!killmails[killmailId];
+
+          // only process if everything is good
+          if (!killmailIsDuplicate && !isNpcOnlyKillmail && !killmailIsTooOld) {
+            const killmailData: WebsocketKillmail = {
+              killmail_id: killmailId,
+              killmail_time: killmail.killmail_time,
+              solar_system_id: killmail.solar_system_id,
+              victim: killmail.victim,
+              zkb: zkb
+            }
+
+            console.log('killmailData:', killmailData)
+
+            receiveKillmail(parseKillmail(killmailData))
+          } else if (isNpcOnlyKillmail) {
+            console.log(`Ignored NPC-only killmail ${killmailId}`);
+          } else if (killmailAge > maxKillmailAgeMs) {
+            console.log(`Ignored old killmail ${killmailId}`);
+          } else if (killmailIsDuplicate) {
+            console.warn('duplicate killmail, skipping:', killmailId)
           }
-
-
-          // Check if killmail is too old (filter out old queued killmails)
-          const killmailTime = parseISO(killmail.killmail_time)
-          const killmailAge = differenceInMilliseconds(new Date(), killmailTime)
-          if (killmailAge > maxKillmailAgeMs) {
-            console.log(`Skipping old killmail (${Math.round(killmailAge / 1000 / 60)} minutes old)`)
-            pollTimeout = setTimeout(pollForKillmails, pollingInterval)
-            return
-          }
-
-          const killmailData: WebsocketKillmail = {
-            killmail_id: killmailId,
-            killmail_time: killmail.killmail_time,
-            solar_system_id: killmail.solar_system_id,
-            victim: killmail.victim,
-            zkb: zkb
-          }
-
-          console.log('killmailData:', killmailData)
-
-          receiveKillmail(parseKillmail(killmailData))
         }
 
         pollTimeout = setTimeout(pollForKillmails, pollingInterval)
