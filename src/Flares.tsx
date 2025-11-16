@@ -14,6 +14,11 @@ const Flares: React.FC<{
   killmails: React.MutableRefObject<Killmail[]>
 }> = ({ solarSystems, killmails }) => {
   const pointsRef = useRef<THREE.Points<THREE.BufferGeometry>>(null)
+  const attributesRef = useRef<{ positions: Float32Array, colors: Float32Array, scales: Float32Array }>({
+    positions: new Float32Array(0),
+    colors: new Float32Array(0),
+    scales: new Float32Array(0)
+  })
 
   const theme = useContext(ThemeContext)
 
@@ -30,7 +35,11 @@ const Flares: React.FC<{
     const baseFlareSize = minViewportSize / 8
     const colorFlare = new THREE.Color(theme.flare)
 
-    const { positions, colors, scales } = buildAttributes(count)
+    // Reuse or resize arrays only when needed
+    if (attributesRef.current.positions.length !== count * 3) {
+      attributesRef.current = buildAttributes(count)
+    }
+    const { positions, colors, scales } = attributesRef.current
 
     for (let index = 0; index < killmails.current.length; index++) {
       const { receivedAt, solarSystemId, scaledValue } = killmails.current[index]

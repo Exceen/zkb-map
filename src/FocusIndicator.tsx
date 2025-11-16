@@ -42,8 +42,16 @@ const FocusIndicator: React.FC = () => {
   }, [solarSystems])
 
   const textMaterial = useMemo(() => {
-    return new THREE.MeshBasicMaterial({ color: theme.text, depthTest: false })
+    const material = new THREE.MeshBasicMaterial({ color: theme.text, depthTest: false })
+    return material
   }, [theme.text])
+
+  // Cleanup material on unmount or theme change
+  useEffect(() => {
+    return () => {
+      textMaterial.dispose()
+    }
+  }, [textMaterial])
 
   useFrame(() => {
     let positions = new Float32Array(0)

@@ -31,14 +31,20 @@ const lookAtPoints = (points: HasPosition[]): THREE.Vector3 => {
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
 
   geometry.computeBoundingSphere()
+  let result: THREE.Vector3
   if (geometry.boundingSphere) {
     const { center, radius } = geometry.boundingSphere
 
     center.z += Math.max(radius, minRadius)
-    return center
+    result = center
   } else {
-    return defaultPosition
+    result = defaultPosition
   }
+
+  // Dispose geometry to prevent memory leak
+  geometry.dispose()
+
+  return result
 }
 
 const Camera: React.FC<{
