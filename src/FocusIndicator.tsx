@@ -33,10 +33,13 @@ const FocusIndicator: React.FC = () => {
 
   const { camera } = useThree()
 
-  useEffect(() => useKillmails.subscribe(state => {
-    focusedKillmail.current = state.focused
-    focusedSolarSystem.current = state.focused ? solarSystems[state.focused.solarSystemId] : undefined
-  }))
+  useEffect(() => {
+    const unsubscribe = useKillmails.subscribe(state => {
+      focusedKillmail.current = state.focused
+      focusedSolarSystem.current = state.focused ? solarSystems[state.focused.solarSystemId] : undefined
+    })
+    return unsubscribe
+  }, [solarSystems])
 
   const textMaterial = useMemo(() => {
     return new THREE.MeshBasicMaterial({ color: theme.text, depthTest: false })

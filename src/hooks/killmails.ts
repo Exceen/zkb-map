@@ -6,11 +6,12 @@ import parseISO from 'date-fns/parseISO'
 import { scaleValue } from '../utils/scaling'
 import { useConnection } from './connection'
 
-export const normalKillmailAgeMs = 45 * 1000
+const pollingInterval = 0.1 * 1000
 const trimIntervalMs = 5 * 1000
 const reconnectIntervalMs = trimIntervalMs
+
+export const normalKillmailAgeMs = 45 * 1000
 const maxKillmailAgeMs = 5 * 60 * 1000 // Only accept killmails from the last 5 minutes
-const pollingInterval = 2 * 1000
 
 const uniqueQueueId = `zkb-map-${Math.random().toString(36).substring(2, 9)}`
 
@@ -99,7 +100,6 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
   const receivePing = useConnection(useCallback(state => state.receivePing, []))
   const trimKillmails = useKillmails(useCallback(state => state.trimKillmails, []))
   const receiveKillmail = useKillmails(useCallback(state => state.receiveKillmail, []))
-  const killmails = useKillmails(useCallback(state => state.killmails, []))
 
   useEffect(() => {
     const interval = setInterval(trimKillmails, trimIntervalMs)
@@ -147,19 +147,12 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
           const killmailId = killmail.killmail_id
 
           // check killmail data
-          let attackerCharacterIds = [];
-          for (let attacker of (killmail.attackers ?? [])) {
-            if (attacker['character_id']) {
-              attackerCharacterIds.push(attacker['character_id']);
-            }
-          }
-          const isNpcOnlyKillmail = attackerCharacterIds.length === 0;
           const killmailAge = differenceInMilliseconds(new Date(), parseISO(killmail.killmail_time))
           const killmailIsTooOld = killmailAge > maxKillmailAgeMs
-          const killmailIsDuplicate = !!killmails[killmailId];
+          const killmailIsDuplicate = !!useKillmails.getState().killmails[killmailId];
 
-          // only process if everything is good
-          if (!killmailIsDuplicate && !isNpcOnlyKillmail && !killmailIsTooOld) {
+          // only process if everything is good (NPC filtering now handled server-side)
+          if (!killmailIsDuplicate && !killmailIsTooOld) {
             const killmailData: WebsocketKillmail = {
               killmail_id: killmailId,
               killmail_time: killmail.killmail_time,
@@ -171,10 +164,8 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
             console.log('killmailData:', killmailData)
 
             receiveKillmail(parseKillmail(killmailData))
-          } else if (isNpcOnlyKillmail) {
-            console.log(`Ignored NPC-only killmail ${killmailId}`);
-          } else if (killmailAge > maxKillmailAgeMs) {
-            console.log(`Ignored old killmail ${killmailId}`);
+          } else if (killmailIsTooOld) {
+            console.log(`Ignored old killmail ${killmailId} (${Math.round(killmailAge / 1000 / 60)} minutes old)`);
           } else if (killmailIsDuplicate) {
             console.warn('duplicate killmail, skipping:', killmailId)
           }
@@ -200,5 +191,5 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
         clearTimeout(pollTimeout)
       }
     }
-  }, [sourceUrl, receiveKillmail, receivePing, killmails])
+  }, [sourceUrl, receiveKillmail, receivePing])
 }

@@ -63,9 +63,12 @@ const KillmailEntry: React.FC<{
 
   const isFocused = useRef(false)
   const isActive = useRef(true)
-  useEffect(() => useKillmails.subscribe(state => {
-    isFocused.current = state.focused ? state.focused.id === id : false
-  }))
+  useEffect(() => {
+    const unsubscribe = useKillmails.subscribe(state => {
+      isFocused.current = state.focused ? state.focused.id === id : false
+    })
+    return unsubscribe
+  }, [id])
 
   useEffect(() => {
     const animate = () => {
