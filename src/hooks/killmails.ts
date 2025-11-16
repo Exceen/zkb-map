@@ -148,7 +148,6 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
 
           // Skip if we already have this killmail (prevents duplicates)
           if (killmails[killmailId]) {
-            // Continue polling immediately
             pollTimeout = setTimeout(pollForKillmails, pollingInterval)
             return
           }
@@ -163,7 +162,6 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
           let isNpcOnlyKillmail = attackerCharacterIds.length === 0;
           if (isNpcOnlyKillmail) {
             console.log(`Skipping NPC-only killmail ${killmailId}`);
-            // Continue polling immediately
             pollTimeout = setTimeout(pollForKillmails, pollingInterval)
             return
           }
@@ -174,7 +172,6 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
           const killmailAge = differenceInMilliseconds(new Date(), killmailTime)
           if (killmailAge > maxKillmailAgeMs) {
             console.log(`Skipping old killmail (${Math.round(killmailAge / 1000 / 60)} minutes old)`)
-            // Continue polling immediately to clear out old killmails from queue
             pollTimeout = setTimeout(pollForKillmails, pollingInterval)
             return
           }
@@ -192,16 +189,15 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
           receiveKillmail(parseKillmail(killmailData))
         }
 
-        // Send periodic ping to keep connection status updated
-        receivePing()
-
-        // Continue polling immediately
         pollTimeout = setTimeout(pollForKillmails, pollingInterval)
       } catch (error) {
         console.error('Error polling RedisQ:', error)
         // Retry after interval on error
         pollTimeout = setTimeout(pollForKillmails, reconnectIntervalMs)
       }
+
+      // Send periodic ping to keep connection status updated
+      receivePing()
     }
 
     // Start polling
