@@ -164,8 +164,8 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
           } else if (killmailIsDuplicate) {
             console.warn('duplicate killmail, skipping:', killmailId)
           }
-        } else {
-          console.warn("No killmail in package")
+        // } else {
+        //   console.warn("No killmail in package")
         }
 
         pollTimeout = setTimeout(pollForKillmails, 0)
