@@ -6,7 +6,6 @@ import parseISO from 'date-fns/parseISO'
 import { scaleValue } from '../utils/scaling'
 import { useConnection } from './connection'
 
-const pollingInterval = 0.1 * 1000
 const trimIntervalMs = 5 * 1000
 const reconnectIntervalMs = trimIntervalMs
 
@@ -171,7 +170,7 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
           }
         }
 
-        pollTimeout = setTimeout(pollForKillmails, pollingInterval)
+        pollTimeout = setTimeout(pollForKillmails, 0)
       } catch (error) {
         console.error('Error polling RedisQ:', error)
         // Retry after interval on error
