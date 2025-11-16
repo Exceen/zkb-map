@@ -156,7 +156,7 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
               zkb: zkb
             }
 
-            console.log('killmailData:', killmailData)
+            console.log('killmailData:', killmailData, 'data.package:', data.package)
 
             receiveKillmail(parseKillmail(killmailData))
           } else if (killmailIsTooOld) {
