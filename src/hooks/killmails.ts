@@ -114,7 +114,7 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
 
       const separator = sourceUrl.includes('?') ? '&' : '?'
       const urlWithQueue = `${sourceUrl}${separator}queueID=${uniqueQueueId}`
-      console.log('polling RedisQ for killmails...', urlWithQueue)
+      // console.log('polling RedisQ for killmails...', urlWithQueue)
 
       try {
         const response = await fetch(urlWithQueue, {
@@ -137,10 +137,6 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
           console.log('data.package:', data.package)
         }
 
-        // RedisQ returns {package: {...}} or {package: null}
-        if (data.package && !data.package.killmail) {
-            console.warn("No killmail in package")
-        }
         if (data.package && data.package.killmail) {
           const { killmail, zkb } = data.package
           const killmailId = killmail.killmail_id
@@ -168,6 +164,8 @@ export const useKillmailMonitor = (sourceUrl: string): void => {
           } else if (killmailIsDuplicate) {
             console.warn('duplicate killmail, skipping:', killmailId)
           }
+        } else {
+          console.warn("No killmail in package")
         }
 
         pollTimeout = setTimeout(pollForKillmails, 0)
